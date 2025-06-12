@@ -1,0 +1,1893 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+plot_lognormal_distribution_with_fit <- function(points) {
+  # Load required libraries
+  library(fitdistrplus)
+  
+  # Check if points are numeric
+  if (!is.numeric(points)) {
+    stop("The input 'points' must be a numeric vector.")
+  }
+  
+  # Fit a log-normal distribution to the data
+  fit <- fitdist(points, "lnorm")
+  
+  # Extract parameters from the fit
+  meanlog <- fit$estimate["meanlog"]
+  sdlog <- fit$estimate["sdlog"]
+  
+  # Define the range of x values for the curve (adjust range based on the data)
+  x_values <- seq(0.01, max(points) * 1.5, length.out = 50000)  # Ensure x starts from a small value above 0
+  density_values <- dlnorm(x_values, meanlog = meanlog, sdlog = sdlog)
+  
+  # Compute the total area under the curve (numerical integration using the trapezoidal rule)
+  area_under_curve <- sum(density_values) * (x_values[2] - x_values[1])  # Approximate the integral
+  
+  # Normalize the density values so that the area under the curve sums to 1
+  normalized_density_values <- density_values / area_under_curve  # Normalize
+  
+  # Create a data frame for the normalized curve
+  data_curve <- data.frame(x = x_values, y = normalized_density_values)
+  
+  # Create a data frame for the points with the log-normal density
+  points_data <- data.frame(
+    x = points,
+    y = dlnorm(points, meanlog = meanlog, sdlog = sdlog) 
+  )
+  
+  # Calculate goodness-of-fit metrics
+  log_likelihood <- fit$loglik
+  aic <- fit$aic
+  ks_test <- ks.test(points, "plnorm", meanlog = meanlog, sdlog = sdlog)
+  
+  # Kernel density for RMSE calculation
+  observed_density <- density(points, n = 100)$y
+  fitted_density <- dlnorm(density(points, n = 100)$x, meanlog = meanlog, sdlog = sdlog)
+  rmse <- sqrt(mean((observed_density - fitted_density)^2))
+  
+    # Value-based RMSE: compare raw CVs to simulated ones from the fitted distribution
+  set.seed(123)  # For reproducibility
+  simulated_values <- rlnorm(length(points), meanlog = meanlog, sdlog = sdlog)
+  rmse_values <- sqrt(mean((points - simulated_values)^2))
+
+  
+  # Print goodness-of-fit metrics
+  cat("Goodness-of-Fit Metrics:\n")
+  cat("-----------------------------------\n")
+  cat("Log-Likelihood:", round(log_likelihood, 2), "\n")
+  cat("AIC:", round(aic, 2), "\n")
+  cat("KS Test Statistic:", round(ks_test$statistic, 3), "(p-value:", round(ks_test$p.value, 3), ")\n")
+    cat("Density RMSE (shape-based):", round(rmse, 4), "\n")
+  cat("Value RMSE (CV units):", round(rmse_values, 4), "\n")
+
+  cat("-----------------------------------\n")
+  
+  # Print the equation of the log-normal distribution
+  cat("Equation of the log-normal distribution:\n")
+  cat(paste0("f(x) = 1 / (x * ", round(sdlog, 3), " * sqrt(2 * pi)) * exp(-((log(x) - ", round(meanlog, 3), ")^2) / (2 * ", round(sdlog, 3), "^2))\n"))
+  
+  # Create the plot
+  ggplot(data_curve, aes(x = x, y = y)) +
+    geom_line(color = "blue", size = 1) +  # Plot the fitted log-normal curve
+    geom_point(data = points_data, aes(x = x, y = y), color = "red", size = 2) +  # Overlay points
+    labs(
+      title = "Plant CV Log-Normal Distribution Fit",
+      subtitle = paste("Meanlog =", round(meanlog, 3), ", Sdlog =", round(sdlog, 3)),
+      x = "Plant CV Values",
+      y = "Normalized Probability Density"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.subtitle = element_text(hjust = 0.5, size = 10, face = "italic"),
+      axis.title = element_text(face = "bold", size = 12)
+    ) +
+    xlim(0, NA)  # Ensure x-axis starts at 0 and extends automatically
+  
+  values = data.frame(meanlog_value = round(meanlog, 4), sdlog_value = round(sdlog, 4))
+  
+  return(values)
+}
+```
+
+```{r}
+points = Plant_CV_numeric
+# Check if points are numeric
+  if (!is.numeric(points)) {
+    stop("The input 'points' must be a numeric vector.")
+  }
+  
+  # Fit a log-normal distribution to the data
+  fit <- fitdist(points, "lnorm")
+  
+  # Extract parameters from the fit
+  meanlog <- fit$estimate["meanlog"]
+  sdlog <- fit$estimate["sdlog"]
+  
+  # Define the range of x values for the curve (adjust range based on the data)
+  x_values <- seq(0.01, max(points) * 1.5, length.out = 5000)  # Ensure x starts from a small value above 0
+  density_values <- dlnorm(x_values, meanlog = meanlog, sdlog = sdlog)
+  
+  # Compute the total area under the curve (numerical integration using the trapezoidal rule)
+  area_under_curve <- sum(density_values) * (x_values[2] - x_values[1])  # Approximate the integral
+  
+  # Normalize the density values so that the area under the curve sums to 1
+  normalized_density_values <- density_values / area_under_curve  # Normalize
+  
+  # Create a data frame for the normalized curve
+  data_curve <- data.frame(x = x_values, y = normalized_density_values)
+  
+  # Create a data frame for the points with the log-normal density
+  points_data <- data.frame(
+    x = points,
+    y = dlnorm(points, meanlog = meanlog, sdlog = sdlog) 
+  )
+  
+  # Calculate goodness-of-fit metrics
+  log_likelihood <- fit$loglik
+  aic <- fit$aic
+  ks_test <- ks.test(points, "plnorm", meanlog = meanlog, sdlog = sdlog)
+  
+  # Kernel density for RMSE calculation
+  observed_density <- density(points, n = 100)$y
+  fitted_density <- dlnorm(density(points, n = 100)$x, meanlog = meanlog, sdlog = sdlog)
+  rmse <- sqrt(mean((observed_density - fitted_density)^2))
+  
+  # Print goodness-of-fit metrics
+  cat("Goodness-of-Fit Metrics:\n")
+  cat("-----------------------------------\n")
+  cat("Log-Likelihood:", round(log_likelihood, 2), "\n")
+  cat("AIC:", round(aic, 2), "\n")
+  cat("KS Test Statistic:", round(ks_test$statistic, 3), "(p-value:", round(ks_test$p.value, 3), ")\n")
+  cat("RMSE:", round(rmse, 4), "\n")
+  cat("-----------------------------------\n")
+  
+  # Print the equation of the log-normal distribution
+  cat("Equation of the log-normal distribution:\n")
+  cat(paste0("f(x) = 1 / (x * ", round(sdlog, 3), " * sqrt(2 * pi)) * exp(-((log(x) - ", round(meanlog, 3), ")^2) / (2 * ", round(sdlog, 3), "^2))\n"))
+  
+  # Create the plot
+  ggplot(data_curve, aes(x = x, y = y)) +
+    geom_line(color = "blue", size = 1) +  # Plot the fitted log-normal curve
+    geom_point(data = points_data, aes(x = x, y = y), color = "red", size = 0.1) +  # Overlay points
+    labs(
+      title = "Log-Normal Distribution Fit with Points",
+      subtitle = paste("Meanlog =", round(meanlog, 3), ", Sdlog =", round(sdlog, 3)),
+      x = "Tobacco CV",
+      y = "Normalized Probability Density"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.subtitle = element_text(hjust = 0.5, size = 10, face = "italic"),
+      axis.title = element_text(face = "bold", size = 12)
+    ) +
+    xlim(0, NA)  # Ensure x-axis starts at 0 and extends automatically
+```
+
+```{r}
+plot_lognormal_distribution_with_probabilities <- function(points) {
+  # Load required libraries
+  library(ggplot2)
+  library(fitdistrplus)
+  
+  # Check if points are numeric
+  if (!is.numeric(points)) {
+    stop("The input 'points' must be a numeric vector.")
+  }
+  
+  # Fit a log-normal distribution to the data
+  fit <- fitdist(points, "lnorm")
+  
+  # Extract parameters from the fit
+  meanlog <- fit$estimate["meanlog"]
+  sdlog <- fit$estimate["sdlog"]
+  
+  # Define the range of x values for the curve (adjust range based on the data)
+  x_values <- seq(0.01, max(points) * 1.5, length.out = 500)  # Ensure x starts from a small value above 0
+  
+  # Compute the cumulative distribution function (CDF) for each x value
+  cdf_values <- plnorm(x_values, meanlog = meanlog, sdlog = sdlog)
+  
+  # Normalize the CDF values to probabilities (from 0 to 1)
+  # This is already scaled by `plnorm`, so no further normalization is needed here.
+  
+  # Create a data frame for the normalized curve
+  data_curve <- data.frame(x = x_values, y = cdf_values)
+  
+  # Create a data frame for the points with the log-normal density
+  points_data <- data.frame(
+    x = points,
+    y = plnorm(points, meanlog = meanlog, sdlog = sdlog)
+  )
+  
+  # Calculate goodness-of-fit metrics
+  log_likelihood <- fit$loglik
+  aic <- fit$aic
+  ks_test <- ks.test(points, "plnorm", meanlog = meanlog, sdlog = sdlog)
+  
+  # Kernel density for RMSE calculation
+  observed_density <- density(points, n = 100)$y
+  fitted_density <- dlnorm(density(points, n = 100)$x, meanlog = meanlog, sdlog = sdlog)
+  rmse <- sqrt(mean((observed_density - fitted_density)^2))
+  
+  # Print goodness-of-fit metrics
+  cat("Goodness-of-Fit Metrics:\n")
+  cat("-----------------------------------\n")
+  cat("Log-Likelihood:", round(log_likelihood, 2), "\n")
+  cat("AIC:", round(aic, 2), "\n")
+  cat("KS Test Statistic:", round(ks_test$statistic, 3), "(p-value:", round(ks_test$p.value, 3), ")\n")
+  cat("RMSE:", round(rmse, 4), "\n")
+  cat("-----------------------------------\n")
+  
+  # Print the equation of the log-normal distribution
+  cat("Equation of the log-normal distribution:\n")
+  cat(paste0("f(x) = 1 / (x * ", round(sdlog, 3), " * sqrt(2 * pi)) * exp(-((log(x) - ", round(meanlog, 3), ")^2) / (2 * ", round(sdlog, 3), "^2))\n"))
+  
+  # Create the plot
+  ggplot(data_curve, aes(x = x, y = y)) +
+    geom_line(color = "blue", size = 1) +  # Plot the fitted log-normal curve
+    geom_point(data = points_data, aes(x = x, y = y), color = "red", size = 0.1) +  # Overlay points
+    labs(
+      title = "Plant CV Log-Normal Distribution Fit with Probabilities",
+      subtitle = paste("Meanlog =", round(meanlog, 3), ", Sdlog =", round(sdlog, 3)),
+      x = "Plant CV Value",
+      y = "Cumulative Probability"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.subtitle = element_text(hjust = 0.5, size = 10, face = "italic"),
+      axis.title = element_text(face = "bold", size = 12)
+    ) +
+    xlim(0, NA)  # Ensure x-axis starts at 0 and extends automatically
+}
+
+```
+
+```{r}
+compare_2 = function(effect_size){
+  
+low_value = 100000
+effect_size_to_add = (100000 * effect_size) - 100000
+true_values <- data.frame(
+  construct = c(1,2),
+  value = c(low_value,
+            low_value + effect_size_to_add))
+
+percent_valid_tests = data.frame(plant_number = NULL, percent_valid = NULL)
+number_tests = 1000
+conglomerate_tests = data.frame(plant_number = NULL, GFP = NULL, construct = NULL,
+                                rep = NULL, total_plants = NULL)
+conglomerate_tests_collect = FALSE
+
+experimental_summary = data.frame(ranked_properly = NULL, t_test_percent = NULL, plant_number = NULL, rep = NULL)
+
+#defines total number of plants that will be tested
+for(plant_number in 1:12){
+  number_plants_to_generate = plant_number
+  number_successful_comparisons = 0
+  
+  print(number_plants_to_generate)
+  
+  #number simulations
+  for(iterations in 1:number_tests){
+    GFP_distribution = data.frame(plant_number = NULL, GFP = NULL, construct = NULL)
+    weekly_CV = generate_weekly_CV_average()
+    
+    #defined number of constructs
+    for(construct in 1:length(true_values$construct)){
+      
+      #defines number of plants for this iteration
+      for(plants in 1:number_plants_to_generate){
+        plant_CV = generate_plant_CV(weekly_CV) #generate plant
+        plant_number = as.factor(plants)
+        
+        GFP_output = generate_8_disks(true_values$value[construct], plant_CV, plant_number)
+        GFP_output = GFP_output %>% mutate(construct = true_values$construct[construct])
+        
+        GFP_distribution = rbind(GFP_distribution, GFP_output)
+      }
+      
+      if(conglomerate_tests_collect == TRUE){
+        experiment_data = GFP_distribution %>% 
+          mutate(rep = as.factor(iterations), total_plants = as.factor(number_plants_to_generate))
+        conglomerate_tests = rbind(conglomerate_tests, experiment_data)
+      }
+    }
+    
+    #determine if experiment can successfully differentiate all samples
+    iteration_results = calculate_ranking_significance(GFP_distribution)
+    iteration_results = iteration_results %>% mutate(total_plant_number = number_plants_to_generate,
+                                                     rep = as.factor(iterations))
+    
+    
+    if(iterations %% 100 == 0){
+      print(paste(c(iterations, "iterations of plant number ", number_plants_to_generate, " completed")))
+    }
+    
+    experimental_summary = rbind(experimental_summary, iteration_results)
+  }
+  
+  
+}
+experimental_summary = experimental_summary %>% mutate(effect_size = effect_size)
+return(experimental_summary)
+}
+```
+
+```{r}
+compare_2_EHA105 = function(effect_size){
+  
+low_value = 100000
+effect_size_to_add = (100000 * effect_size) - 100000
+true_values <- data.frame(
+  construct = c(1,2),
+  value = c(low_value,
+            low_value + effect_size_to_add))
+
+percent_valid_tests = data.frame(plant_number = NULL, percent_valid = NULL)
+number_tests = 1000
+conglomerate_tests = data.frame(plant_number = NULL, GFP = NULL, construct = NULL,
+                                rep = NULL, total_plants = NULL)
+conglomerate_tests_collect = FALSE
+
+experimental_summary = data.frame(ranked_properly = NULL, t_test_percent = NULL, plant_number = NULL, rep = NULL)
+
+#defines total number of plants that will be tested
+for(plant_number in 1:20){
+  number_plants_to_generate = plant_number
+  number_successful_comparisons = 0
+  
+  print(number_plants_to_generate)
+  
+  #number simulations
+  for(iterations in 1:number_tests){
+    GFP_distribution = data.frame(plant_number = NULL, GFP = NULL, construct = NULL)
+    weekly_CV = generate_weekly_CV_average_EHA105()
+    
+    #defined number of constructs
+    for(construct in 1:length(true_values$construct)){
+      
+      #defines number of plants for this iteration
+      for(plants in 1:number_plants_to_generate){
+        plant_CV = generate_plant_CV(weekly_CV) #generate plant
+        plant_number = as.factor(plants)
+        
+        GFP_output = generate_8_disks(true_values$value[construct], plant_CV, plant_number)
+        GFP_output = GFP_output %>% mutate(construct = true_values$construct[construct])
+        
+        GFP_distribution = rbind(GFP_distribution, GFP_output)
+      }
+      
+      if(conglomerate_tests_collect == TRUE){
+        experiment_data = GFP_distribution %>% 
+          mutate(rep = as.factor(iterations), total_plants = as.factor(number_plants_to_generate))
+        conglomerate_tests = rbind(conglomerate_tests, experiment_data)
+      }
+    }
+    
+    #determine if experiment can successfully differentiate all samples
+    iteration_results = calculate_ranking_significance(GFP_distribution)
+    iteration_results = iteration_results %>% mutate(total_plant_number = number_plants_to_generate,
+                                                     rep = as.factor(iterations))
+    
+    
+    if(iterations %% 100 == 0){
+      print(paste(c(iterations, "iterations of plant number ", number_plants_to_generate, " completed")))
+    }
+    
+    experimental_summary = rbind(experimental_summary, iteration_results)
+  }
+  
+  
+}
+experimental_summary = experimental_summary %>% mutate(effect_size = effect_size)
+return(experimental_summary)
+}
+```
+
+```{r}
+##Comparing just 2 constructs
+effect_size_simulation_2_samples = compare_2(1.05)
+effect_size_simulation_2_samples = rbind(effect_size_simulation_2_samples, compare_2(1.1))
+effect_size_simulation_2_samples = rbind(effect_size_simulation_2_samples, compare_2(1.2))
+effect_size_simulation_2_samples = rbind(effect_size_simulation_2_samples, compare_2(1.3))
+effect_size_simulation_2_samples = rbind(effect_size_simulation_2_samples, compare_2(1.4))
+effect_size_simulation_2_samples = rbind(effect_size_simulation_2_samples, compare_2(1.5))
+effect_size_simulation_2_samples= rbind(effect_size_simulation_2_samples, compare_2(1.6))
+effect_size_simulation_2_samples = rbind(effect_size_simulation_2_samples, compare_2(2))
+
+effect_size_simulation_2_samples$t_tests_correct = effect_size_simulation_2_samples$t_tests_correct - 9
+
+effect_size_simulation_2_samples_summarized = effect_size_simulation_2_samples %>% 
+  mutate(plant_factor = as.factor(total_plant_number), effect_size_factor = as.factor(effect_size)) %>%
+  group_by(effect_size_factor, total_plant_number) %>% summarize(percent_correct = 100 * (sum(t_tests_correct) / 1000))
+
+effect_size_simulation_2_samples_summarized %>%
+  ggplot(aes(x = total_plant_number, y = percent_correct)) + geom_point() + facet_wrap(~effect_size_factor)
+
+effect_size_simulation_2_samples_summarized %>%
+  ggplot(aes(x = total_plant_number, y = percent_correct, color = effect_size_factor)) + geom_point() + geom_smooth() +
+  theme_light() +
+  labs(title = "Plant number vs test accuracy") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  ) +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 10)) +
+  scale_x_continuous(limits = c(1, 12), breaks = seq(1, 12, by = 1)) +
+  xlab("Plant number") +  
+  ylab("Percent accurate tests")
+
+two_sample_comp = effect_size_simulation_2_samples_summarized %>% filter(percent_correct > 95) %>% group_by(effect_size_factor) %>%
+  summarize(minimum = min(total_plant_number)) %>% 
+  ggplot(aes(x = effect_size_factor, y = minimum)) + geom_col() +
+  theme_light() +
+  labs(title = "Effect size vs required plant number for >95% accurate comparison probability") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  ) +
+  scale_y_continuous(limits = c(0, 12), breaks = seq(0, 12, by = 1)) +  # Set y-axis limits from 0 to 10
+  xlab("Effect size (fold difference in GFP expression)") +  
+  ylab("Plants required")
+
+
+#############
+#Compare using EHA105
+
+EHA105_1.2 = compare_2_EHA105(1.2)
+EHA105_1.3 = compare_2_EHA105(1.3)
+EHA105_1.4 = compare_2_EHA105(1.4)
+EHA105_1.5 = compare_2_EHA105(1.5)
+EHA105_1.6 = compare_2_EHA105(1.6)
+EHA105_2 = compare_2_EHA105(2)
+
+EHA105_modeling = rbind(EHA105_1.2, EHA105_1.3)
+EHA105_modeling = rbind(EHA105_modeling, EHA105_1.4)
+EHA105_modeling = rbind(EHA105_modeling, EHA105_1.5)
+EHA105_modeling = rbind(EHA105_modeling, EHA105_1.6)
+EHA105_modeling = rbind(EHA105_modeling, EHA105_2)
+
+EHA105_modeling$t_tests_correct = EHA105_modeling$t_tests_correct - 9
+
+EHA105_plants_needed = EHA105_modeling %>% 
+  mutate(total_plant_number_factor = as.factor(total_plant_number), effect_size_factor = as.factor(effect_size)) %>%
+  group_by(effect_size_factor, total_plant_number) %>% summarize(percent_accurate = 100 * (sum(t_tests_correct)/1000)) %>%
+  filter(percent_accurate > 94) %>% group_by(effect_size_factor) %>%
+  summarize(minimum = min(total_plant_number)) %>% mutate(Strain = "EHA105")
+
+GV3101_plants_needed = effect_size_simulation_2_samples %>% 
+  mutate(total_plant_number_factor = as.factor(total_plant_number), effect_size_factor = as.factor(effect_size)) %>%
+  group_by(effect_size_factor, total_plant_number) %>% summarize(percent_accurate = 100 * (sum(t_tests_correct)/1000)) %>%
+  filter(percent_accurate > 95) %>% group_by(effect_size_factor) %>%
+  summarize(minimum = min(total_plant_number)) %>% mutate(Strain = "GV3101")
+
+EHA105_GV3101_min_plants = rbind(EHA105_plants_needed, GV3101_plants_needed)
+
+EHA105_modeling_summarized = EHA105_GV3101_min_plants %>%
+  ggplot(aes(x = effect_size_factor, y = minimum, fill = Strain)) + geom_col(position = position_dodge()) +
+  theme_light() +
+  labs(title = "Effect size vs required plant number for >95% accurate comparison probability") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  ) +
+  scale_y_continuous(limits = c(0, 20), breaks = seq(0, 20, by = 1)) +  # Set y-axis limits from 0 to 10
+  xlab("Effect size (fold difference in GFP expression)") +  
+  ylab("Plants required")
+
+EHA105_GV3101_min_plants %>% ggplot(aes(x = as.numeric(effect_size_factor), y = minimum, color = Strain)) + geom_point() +
+  geom_smooth()
+######
+effect_size_simulation_reloaded = effect_size_simulation_reloaded %>% 
+  mutate(total_plant_number_factor = as.factor(effect_size_simulation_reloaded$total_plant_number),
+                                    effect_size_factor = as.factor(effect_size_simulation_reloaded$effect_size))
+
+effect_size_simulation_reloaded %>% group_by(total_plant_number_factor, effect_size_factor) %>%
+  summarize(effect_size_factor, total_plant_number,
+            proper_ranking_percent = 100 * (mean(proper_ranking))) %>% unique() %>%
+  ggplot(aes(x =  total_plant_number, y = proper_ranking_percent, color = effect_size_factor)) + 
+  geom_smooth() + 
+  geom_point() 
+
+effect_size_simulation_reloaded %>% group_by(total_plant_number_factor, effect_size_factor) %>%
+  summarize(effect_size_factor, total_plant_number,
+            t_test_percent = 10 * mean(t_tests_correct)) %>% unique() %>%
+  ggplot(aes(x =  total_plant_number, y = t_test_percent, color = effect_size_factor)) + 
+  geom_smooth(se = FALSE) + 
+  geom_point() +
+  theme_light() +
+  labs(title = "Percent accurate t-tests vs. Plant Number") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  ) +
+  scale_x_continuous(limits = c(1, 12), breaks = seq(1, 12, by = 1)) +  # Set y-axis limits from 0 to 10
+  xlab("Plant Number") +  
+  ylab("Number of Accurate Tests")
+
+
+combined %>%
+  ggplot(aes(x = total_plant_number_factor, y = t_tests_correct)) + 
+  geom_jitter(width = 0.2, height = 0.2, size = 0.01) +  # Jitter for better visibility
+  theme_light() +
+  labs(title = "Number of Accurate t-tests vs. Plant Number") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  ) +
+  scale_y_continuous(limits = c(0, 10.5), breaks = seq(0, 10, by = 1)) +  # Set y-axis limits from 0 to 10
+  xlab("Plant Number") +  
+  ylab("Number of Accurate Tests") + facet_wrap(~effect_size_factor)
+```
+
+
+
+
+```{r}
+#This function will look at the average of each construct and rank it relative to the other constructs.
+#It will then determine if the constructs are ranked accurately.
+#If they are, it will then determine if the distributions are statistically significantly different
+#If all rankings are, it will return a 1; if not, return a 0
+
+calculate_ranking_significance = function(GFP_distribution){
+  distribution = GFP_distribution %>% mutate(ranking = as.factor(construct))
+  
+  averages = distribution %>%
+    group_by(ranking) %>%
+    summarize(average = mean(GFP)) %>%
+    arrange(average) %>%
+    mutate(calculated_ranking = as.factor(row_number()))
+  
+  true_rank_values = as.integer(averages$ranking)
+  calculated_rank_values = as.integer(averages$calculated_ranking)
+  
+  correctly_ranked = ifelse(identical(true_rank_values, calculated_rank_values) == TRUE, 1, 0)
+  
+  p_values = pairwise.t.test(distribution$GFP, distribution$construct, p.adjust.method = "BH")
+  
+  number_correct = 10 - sum(p_values$p.value > 0.05, na.rm = TRUE)
+
+  #anova_result = aov(GFP ~ ranking, data = distribution)
+  #tukey_test = TukeyHSD(anova_result)
+  
+  #looks at the largest p-valsue of all comparisons
+  #if(max(tukey_test$ranking[,4]) > 0.05){
+   # return(0)
+  #}
+  summary = data.frame(proper_ranking = correctly_ranked, t_tests_correct = number_correct)
+  
+  return(summary)
+}
+
+```
+
+#generates 8 GFP values given the GFP global mean for the construct and the plant CV
+```{r}
+generate_8_disks <- function(GFP_average, Plant_CV, Plant_ID) {
+  # Calculate standard deviation
+  sd_value <- GFP_average * Plant_CV
+  
+  # Initialize disk_outputs vector
+  disk_outputs <- rep(0, 8)
+  
+  # Generate values ensuring all are positive
+  while(any(disk_outputs <= 0)) {
+    disk_outputs <- round(rnorm(8, mean = GFP_average, sd = sd_value))
+  }
+  
+  # Create a data frame
+  data_frame <- data.frame(plant_number = Plant_ID, GFP = disk_outputs)
+  
+  return(data_frame)
+}
+```
+
+#generates the plant CV distribution for the week
+#in other words, this models the "quality" of the plants for a given week based on historical data
+```{r}
+generate_weekly_CV_average = function(){
+  weekly_CV_meanlog = -1.447  #meanlog of weekly CVs
+  weekly_CV_sdlog = 0.3    # sdlog of weekly CVs
+
+  y = runif(1, min = 0, max = 1)
+
+  # Compute the corresponding x value
+  weeks_CV <- qlnorm(y, meanlog = weekly_CV_meanlog, sdlog = weekly_CV_sdlog)
+  
+  ####################################################################
+  #adds stochastic standard deviation of CV based on our data
+  CV_sd_meanlog = -2.3248 #meanlog of weekly sd's of CV values
+  CV_sd_sdlog = 0.3897 #sd log of weekly sd's of CV values
+
+  magnitiude_sd_of_CV <- runif(1, min = 0, max = 1)  
+
+  # Compute the corresponding x value
+  sd_of_CV <- qlnorm(magnitiude_sd_of_CV, meanlog = CV_sd_meanlog, sdlog = CV_sd_sdlog)
+  
+  
+  # Compute sdlog
+  sdlog <- sqrt(log(1 + (sd_of_CV^2 / weeks_CV^2)))
+  
+  generated_weekly_CV = data.frame(log_CV = log(weeks_CV), log_sd = sdlog)
+  
+  return(generated_weekly_CV)
+}
+```
+
+#generate weekly CV average for EHA105
+```{r}
+generate_weekly_CV_average_EHA105 = function(){
+  weekly_CV_meanlog = -0.903  #meanlog of weekly CVs
+  weekly_CV_sdlog = 0.46    # sdlog of weekly CVs
+
+  y = runif(1, min = 0, max = 1)
+
+  # Compute the corresponding x value
+  weeks_CV <- qlnorm(y, meanlog = weekly_CV_meanlog, sdlog = weekly_CV_sdlog)
+  
+  ####################################################################
+  #adds stochastic standard deviation of CV based on our data 
+  #DO NOT HAVE FOR EHA105
+  CV_sd_meanlog = -2.3248 #meanlog of weekly sd's of CV values
+  CV_sd_sdlog = 0.3897 #sd log of weekly sd's of CV values
+
+  magnitiude_sd_of_CV <- runif(1, min = 0, max = 1)  
+
+  # Compute the corresponding x value
+  sd_of_CV <- qlnorm(magnitiude_sd_of_CV, meanlog = CV_sd_meanlog, sdlog = CV_sd_sdlog)
+  
+  
+  # Compute sdlog
+  sdlog <- sqrt(log(1 + (sd_of_CV^2 / weeks_CV^2)))
+  
+  generated_weekly_CV = data.frame(log_CV = log(weeks_CV), log_sd = sdlog)
+  
+  
+  
+  return(generated_weekly_CV)
+}
+```
+
+#generate plant CV
+```{r}
+#generates random plant CV given data on the weeks plant quality
+#takes in weeks CV average and sd
+
+generate_plant_CV = function(weekly_CV_average){
+  #bounds generated CVs to biologically relevant values of 0.03-2
+  CV = 0
+  
+  total_iterations = 0
+  while(CV < 0.03 | CV > 2){
+  #sdlog = 0.420 #derived from bulk data set. 
+  #Commented out as this function now uses a randomized sdlog generation based on our data
+  
+  meanlog = weekly_CV_average$log_CV
+  sdlog = weekly_CV_average$log_sd
+  
+
+  #calculate the CV value of this plant 
+  #uses the weekly CV mean and the randomized CV sd spread for the week
+  
+  
+  # random number between 0 and 1 defining the percentile to use
+  percentile <- runif(1, min = 0, max = 1)  
+
+  # Compute the corresponding x value
+  CV <- qlnorm(percentile, meanlog = meanlog, sdlog = sdlog)
+  total_iterations = total_iterations + 1
+  
+  if(total_iterations > 20){
+    CV = 0.5
+  }
+  }
+  
+  return(CV)
+}
+```
+
+```{r}
+plant_overview = data.frame(CV = NULL, Week = NULL)
+for(week in 1:1000){
+  weekly_CV = generate_weekly_CV_average()
+  for(plant in 1:20){
+    random_plant = generate_plant_CV(weekly_CV)
+    random_plant = data.frame(CV = random_plant, Week = week)
+    plant_overview = rbind(plant_overview, random_plant)
+  }
+  if(week %% 100 == 0){
+    print(week)
+  }
+}
+
+plant_overview$Week_Factor = as.factor(plant_overview$Week)
+subset35 = plant_overview %>% filter(Week <= 35)
+
+subset35 %>% ggplot(aes(x = reorder(Week_Factor,CV, median), y = CV)) + geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.01, height = 0, size = 0.05)
+
+subset35 %>% ggplot(aes(x = "", y = CV)) + geom_violin(width = 0.4) + geom_jitter(width = 0.05, height = 0, size = 0.2) +
+  theme_light() +
+  labs(title = "Simulated plant CVs over 35 weeks") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2),
+  ) +
+  ylab("Plant CVs")
+
+
+
+plant_overview %>% ggplot(aes(x = reorder(Week_Factor,CV, median), y = CV)) + geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.01, height = 0, size = 0.05)
+
+plant_overview %>% ggplot(aes(x = "", y = CV)) + geom_violin(width = 0.4) + 
+  geom_jitter(width = 0.05, height = 0, size = 0.2) +
+  theme_light() +
+  labs(title = "Simulated plant CVs over 1000 weeks") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2),
+  ) +
+  ylab("Plant CVs")
+
+compiled_data_PlantCV %>% ggplot(aes(x = reorder(ORI,Plant_CV, median), y = Plant_CV)) + geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.01, height = 0, size = 0.05)
+
+compiled_data_PlantCV %>% filter(Strain == "GV3101") %>%
+  ggplot(aes(x = "", y = Plant_CV)) + geom_violin(width = 0.4) + 
+  geom_boxplot(width = 0.1, outlier.shape = NA)+
+theme_light() +
+  labs(title = "Real Plant CV distribution over 35 weeks") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2),
+  ) +
+  ylab("Plant CVs")
+
+
+combined_simulated_real = compiled_data_PlantCV %>% filter(Strain == "GV3101") %>% reframe(ORI, Plant_CV) %>%
+  mutate(Simulated = "32 weeks, real data") %>%
+  rename(Week = ORI, CV = Plant_CV)
+
+simulated = plant_overview %>% reframe(CV, Week) %>% mutate(Simulated = "1000 weeks, simulation")
+
+combined_simulated_real = rbind(combined_simulated_real, simulated)
+
+first_32 = plant_overview %>% filter(Week >= 1 & Week <= 32) %>% 
+  reframe(CV, Week) %>% mutate(Simulated = "32 weeks, simulation 1")
+second_32 = plant_overview %>% filter(Week >= 33 & Week <= 64) %>%
+reframe(CV, Week) %>% mutate(Simulated = "32 weeks, simulation 2")
+third_32 = plant_overview %>% filter(Week >= 65 & Week <= 96) %>%
+  reframe(CV, Week) %>% mutate(Simulated = "32 weeks, simulation")
+
+combined_simulated_real = rbind(combined_simulated_real, second_32)
+
+combined_simulated_real$Simulated = factor(combined_simulated_real$Simulated, levels = c(
+  "32 weeks, real data", "32 weeks, simulation 1", "32 weeks, simulation 2", "32 weeks, simulation", "1000 weeks, simulation"
+))
+
+individual_plants = combined_simulated_real %>% 
+  ggplot(aes(x = Simulated, y = CV)) + geom_violin(width = 0.4) + 
+  geom_boxplot(width = 0.1, outlier.shape = NA) +
+  theme_light() +
+  labs(title = "Real vs simulated individual plant CVs") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2),
+  ) +
+  ylab("Plant CVs") +
+  xlab("")
+
+#model validation
+ggplot() +
+  geom_density(data = real_df, aes(x = PlantCV), color = "black", size = 1.2) +
+  geom_density(data = sim_df, aes(x = PlantCV), color = "red", linetype = "dashed", size = 1.2) +
+  theme_minimal() +
+  labs(title = "Plant CV Distribution: Real vs Simulated", x = "Plant CV", y = "Density")
+
+# ECDF
+ggplot() +
+  stat_ecdf(data = real_df, aes(x = PlantCV), color = "black") +
+  stat_ecdf(data = sim_df, aes(x = PlantCV), color = "red", linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "ECDF of Plant CVs: Real vs Simulated", x = "Plant CV", y = "ECDF")
+
+#Weekly variance modeling
+combined_simulated_real = combined_simulated_real %>% 
+  filter(Simulated %in% c("32 weeks, real data", "1000 weeks, simulation"))
+
+# Density plot
+ggplot(combined_simulated_real, aes(x = CV, color = Simulated)) +
+  geom_density(size = 1.2) +
+  theme_minimal() +
+  labs(title = "Distribution of PlantCV: Real vs Simulated", x = "PlantCV", y = "Density")
+
+# ECDF plot
+combined_simulated_real %>% 
+  ggplot(aes(x = CV, color = Simulated)) +
+  stat_ecdf(size = 1.2) +
+  theme_minimal() +
+  labs(title = "ECDF of PlantCV: Real vs Simulated", x = "PlantCV", y = "ECDF")
+
+combined_simulated_real %>% group_by(Simulated) %>%
+  summarize(median = median(CV), mean = mean(CV), sd = sd(CV))
+
+qqplot(
+  combined_simulated_real$CV[combined_simulated_real$Simulated == "32 weeks, real data"],
+  combined_simulated_real$CV[combined_simulated_real$Simulated == "1000 weeks, simulation"],
+  main = "QQ Plot: Real vs Simulated PlantCV",
+  xlab = "Real PlantCV",
+  ylab = "Simulated PlantCV"
+) 
+abline(0, 1, col = "blue")
+
+library(transport)
+wasserstein1d(
+  combined_simulated_real$CV[combined_simulated_real$Simulated == "32 weeks, real data"],
+  combined_simulated_real$CV[combined_simulated_real$Simulated == "1000 weeks, simulation"]
+)
+
+#####GRAPH OF MODEL EVAL
+
+# Extract values
+real_vals <- combined_simulated_real$CV[combined_simulated_real$Simulated == "32 weeks, real data"]
+sim_vals  <- combined_simulated_real$CV[combined_simulated_real$Simulated == "1000 weeks, simulation"]
+
+# ECDFs
+ecdf_real <- ecdf(real_vals)
+ecdf_sim  <- ecdf(sim_vals)
+
+# Common grid
+x_vals <- sort(unique(c(real_vals, sim_vals)))
+y_real <- ecdf_real(x_vals)
+y_sim  <- ecdf_sim(x_vals)
+
+# Wasserstein distance
+wasserstein <- sum(abs(y_real - y_sim)) / length(y_real)
+
+# Prepare plot_df for ECDF curves
+plot_df <- data.frame(
+  CV = x_vals,
+  `32 weeks, real data` = y_real,
+  `1000 weeks, simulation` = y_sim
+) %>%
+  pivot_longer(cols = -CV, names_to = "Group", values_to = "ECDF") %>%
+  mutate(Group = factor(Group, levels = c("32 weeks, real data", "1000 weeks, simulation"))) %>%
+  group_by(CV) %>%
+  mutate(
+    ymin = min(ECDF),
+    ymax = max(ECDF)
+  ) %>%
+  ungroup()
+
+# Final plot
+ggplot(plot_df, aes(x = CV)) +
+  geom_step(aes(y = ECDF, color = Group), size = 1.2, show.legend = TRUE) +
+  geom_ribbon(aes(ymin = ymin, ymax = ymax), fill = "gray80", alpha = 0.4) +
+  scale_color_manual(
+    name = "Data Source",
+    values = c("32 weeks, real data" = "black", "1000 weeks, simulation" = "red")
+  ) +
+  labs(
+    title = "ECDF of Plant CVs: Real Data vs Simulation",
+    subtitle = paste0("Wasserstein Distance = ", round(wasserstein, 3)),
+    x = "Plant CV",
+    y = "Cumulative Probability"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+###############
+
+subsample_weekly_CV = variance_overview %>% filter(Week >= 1 & Week <= 32)
+
+variance_overview = variance_overview  %>%
+  mutate(variance = exp(variance_overview$CV_median.log_CV), Week = as.factor(Week), simulated = "1000 weeks, simulated") %>%
+  reframe(variance, Week, simulated)
+
+subsample_weekly_CV = subsample_weekly_CV  %>%
+  mutate(variance = exp(subsample_weekly_CV$CV_median.log_CV), Week = as.factor(Week), simulated = "32 weeks, simulated") %>%
+  reframe(variance, Week, simulated)
+
+weekly_variance = rbind(variance_overview, subsample_weekly_CV)
+
+GV3101_weekly_CV = compiled_data_PlantCV %>% filter(Strain == "GV3101") %>%
+  group_by(ORI) %>% summarise(variance = median(Plant_CV)) %>%
+  rename(Week = ORI) %>% mutate(simulated = "32 weeks, real data")
+
+weekly_variance = rbind(weekly_variance, GV3101_weekly_CV)
+
+
+weekly_variance$simulated = factor(weekly_variance$simulated, levels = c("32 weeks, real data", "32 weeks, simulated", "1000 weeks, simulated"))
+
+weekly_CV_Average = weekly_variance %>% filter(simulated != "32 weeks, simulated") %>%
+ggplot(aes(x = simulated, y = variance)) + geom_violin(width = 0.4) + 
+  geom_boxplot(width = 0.1, outlier.shape = NA) +
+  theme_light() +
+  labs(title = "Real vs simulated weekly mean CVs") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2),
+  ) +
+  ylab("Plant CVs") +
+  xlab("")
+
+```
+
+
+```{r}
+
+weekly_norm_CVs = weekly_norm %>% group_by(Red.Promoter, Date, Plant) %>% 
+  summarize(Plant_CV_green = sd(Green)/mean(Green), Plant_CV_normalized = sd(Green.Red) / mean(Green.Red))
+
+condition_summary = weekly_norm_CVs %>% group_by(Red.Promoter) %>% 
+  summarize(mean_CV_green = mean(Plant_CV_green), mean_CV_normalize = mean(Plant_CV_normalized))
+
+#PCH4: 0.165
+#PCH5: 0.192
+#PCL1: 0.198
+#PCL2: 0.081
+#PCM1: 0.125
+#PCM2: 0.186
+#GFP alone: 0.170
+
+#PCH4
+PCH4 = weekly_norm %>% filter(Red.Promoter == "PCH4") %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green.Red)/mean(Green.Red))
+
+plot_lognormal_distribution_with_fit(PCH4$Plant_CV)
+plot_lognormal_distribution_with_probabilities(PCH4$Plant_CV)
+#meanlog = -1.865
+#sdlog = 0.354
+PCH4_effect_10 = compare_2_custom(1.2, pops_meanlog = -1.865, pops_sdlog = 0.354)
+PCH4_effect_10$t_tests_correct = PCH4_effect_10$t_tests_correct - 9
+PCH4_effect_10$total_plant_number = as.factor(PCH4_effect_10$total_plant_number)
+PCH4_effect20_summary = PCH4_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100 * (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCH4")
+
+test = 67
+#PCH5
+PCH5 = weekly_norm %>% filter(Red.Promoter == "PCH5") %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green.Red)/mean(Green.Red))
+
+plot_lognormal_distribution_with_fit(PCH5$Plant_CV)
+plot_lognormal_distribution_with_probabilities(PCH5$Plant_CV)
+#meanlog = -1.695
+#sdlog = 0.302
+PCH5_effect_10 = compare_2_custom(1.2, pops_meanlog = -1.695, pops_sdlog = 0.302)
+PCH5_effect_10$t_tests_correct = PCH5_effect_10$t_tests_correct - 9
+PCH5_effect_10$total_plant_number = as.factor(PCH5_effect_10$total_plant_number)
+PCH5_effect20_summary = PCH5_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCH5")
+
+#PCL1
+PCL1 = weekly_norm %>% filter(Red.Promoter == "PCL1") %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green.Red)/mean(Green.Red))
+
+plot_lognormal_distribution_with_fit(PCL1$Plant_CV)
+plot_lognormal_distribution_with_probabilities(PCL1$Plant_CV)
+#meanlog = -1.713
+#sdlog = 0.448
+PCL1_effect_10 = compare_2_custom(1.2, pops_meanlog = -1.713, pops_sdlog = 0.448)
+PCL1_effect_10$t_tests_correct = PCL1_effect_10$t_tests_correct - 9
+PCL1_effect_10$total_plant_number = as.factor(PCL1_effect_10$total_plant_number)
+PCL1_effect20_summary = PCL1_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCL1")
+
+#PCL2
+PCL2 = weekly_norm %>% filter(Red.Promoter == "PCL2") %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green.Red)/mean(Green.Red))
+
+plot_lognormal_distribution_with_fit(PCL2$Plant_CV)
+plot_lognormal_distribution_with_probabilities(PCL2$Plant_CV)
+#meanlog = -2.585
+#sdlog = 0.357
+PCL2_effect_10 = compare_2_custom(1.2, pops_meanlog = -2.585, pops_sdlog = 0.357)
+PCL2_effect_10$t_tests_correct = PCL2_effect_10$t_tests_correct - 9
+PCL2_effect_10$total_plant_number = as.factor(PCL2_effect_10$total_plant_number)
+PCL2_effect20_summary = PCL2_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCL2")
+
+
+#PCM1
+PCM1 = weekly_norm %>% filter(Red.Promoter == "PCM1") %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green.Red)/mean(Green.Red))
+
+plot_lognormal_distribution_with_fit(PCM1$Plant_CV)
+plot_lognormal_distribution_with_probabilities(PCM1$Plant_CV)
+#meanlog = -2.131
+#sdlog = 0.303
+PCM1_effect_10 = compare_2_custom(1.2, pops_meanlog = -2.131, pops_sdlog = 0.303)
+PCM1_effect_10$t_tests_correct = PCM1_effect_10$t_tests_correct - 9
+PCM1_effect_10$total_plant_number = as.factor(PCM1_effect_10$total_plant_number)
+PCM1_effect20_summary = PCM1_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCM1")
+
+
+#PCM2
+PCM2 = weekly_norm %>% filter(Red.Promoter == "PCM2") %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green.Red)/mean(Green.Red))
+
+plot_lognormal_distribution_with_fit(PCM2$Plant_CV)
+plot_lognormal_distribution_with_probabilities(PCM2$Plant_CV)
+#meanlog = -1.725
+#sdlog = 0.305
+PCM2_effect_10 = compare_2_custom(1.2, pops_meanlog = -1.725, pops_sdlog = 0.305)
+PCM2_effect_10$t_tests_correct = PCM2_effect_10$t_tests_correct - 9
+PCM2_effect_10$total_plant_number = as.factor(PCM2_effect_10$total_plant_number)
+PCM2_effect20_summary = PCM2_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCM2")
+
+#GFP alone
+GFP_alone = weekly_norm %>% filter(is.na(Red.Promoter)) %>% group_by(Plant, Date) %>%
+  summarize(Plant_CV = sd(Green)/mean(Green))
+
+plot_lognormal_distribution_with_fit(GFP_alone$Plant_CV)
+plot_lognormal_distribution_with_probabilities(GFP_alone$Plant_CV)
+#meanlog = -1.826
+#sdlog = 0.343
+
+GFP_effect_10 = compare_2_custom(1.2, pops_meanlog = -1.826, pops_sdlog = 0.343)
+GFP_effect_10$t_tests_correct = GFP_effect_10$t_tests_correct - 9
+GFP_effect_10$total_plant_number = as.factor(GFP_effect_10$total_plant_number)
+GFP_effect20_summary = GFP_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "GFP")
+
+
+
+#PCH4: 0.165
+#PCH5: 0.192
+#PCL1: 0.198
+#PCL2: 0.081
+#PCM1: 0.125
+#PCM2: 0.186
+#GFP alone: 0.170
+effect_20_summary = rbind(PCH4_effect20_summary, PCH5_effect20_summary)
+effect_20_summary = rbind(effect_20_summary, PCL1_effect20_summary)
+effect_20_summary = rbind(effect_20_summary, PCL2_effect20_summary)
+effect_20_summary = rbind(effect_20_summary, PCM1_effect20_summary)
+effect_20_summary = rbind(effect_20_summary, PCM2_effect20_summary)
+effect_20_summary = rbind(effect_20_summary, GFP_effect20_summary)
+
+
+promoter_20$Promoter = factor(promoter_20$Promoter, levels = c("GFP_control", "PCL2", "PCM1", "PCM2", "PCH4", "PCH5", "PCL1"))
+promoter_20 %>% ggplot(aes(x = Promoter, y = total_plant_number, fill = Normalized)) + geom_col() +
+  theme_light() +
+  labs(title = "Required plants for 20% effect size detection") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  ) +
+  scale_y_continuous(limits = c(0, 10), breaks = seq(0, 10, by = 1)) +  # Set y-axis limits from 0 to 10
+  xlab("Normalizer promoter") +
+  ylab("Plants required")
+
+
+
+######
+
+#30 percent effect size with 20 plants
+PCH5_effect_10 = compare_2_custom(1.3, pops_meanlog = -1.695, pops_sdlog = 0.302)
+PCH5_effect_10$t_tests_correct = PCH5_effect_10$t_tests_correct - 9
+PCH5_effect_10$total_plant_number = as.factor(PCH5_effect_10$total_plant_number)
+PCH5_effect10_summary = PCH5_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCH5")
+
+PCH4_effect_10 = compare_2_custom(1.3, pops_meanlog = -1.865, pops_sdlog = 0.354)
+PCH4_effect_10$t_tests_correct = PCH4_effect_10$t_tests_correct - 9
+PCH4_effect_10$total_plant_number = as.factor(PCH4_effect_10$total_plant_number)
+PCH4_effect10_summary = PCH4_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100 * (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCH4")
+
+PCL1_effect_10 = compare_2_custom(1.3, pops_meanlog = -1.713, pops_sdlog = 0.448)
+PCL1_effect_10$t_tests_correct = PCL1_effect_10$t_tests_correct - 9
+PCL1_effect_10$total_plant_number = as.factor(PCL1_effect_10$total_plant_number)
+PCL1_effect10_summary = PCL1_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCL1")
+
+PCL2_effect_10 = compare_2_custom(1.3, pops_meanlog = -2.585, pops_sdlog = 0.357)
+PCL2_effect_10$t_tests_correct = PCL2_effect_10$t_tests_correct - 9
+PCL2_effect_10$total_plant_number = as.factor(PCL2_effect_10$total_plant_number)
+PCL2_effect10_summary = PCL2_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCL2")
+
+PCM1_effect_10 = compare_2_custom(1.3, pops_meanlog = -2.131, pops_sdlog = 0.303)
+PCM1_effect_10$t_tests_correct = PCM1_effect_10$t_tests_correct - 9
+PCM1_effect_10$total_plant_number = as.factor(PCM1_effect_10$total_plant_number)
+PCM1_effect10_summary = PCM1_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCM1")
+
+
+PCM2_effect_10 = compare_2_custom(1.3, pops_meanlog = -1.725, pops_sdlog = 0.305)
+PCM2_effect_10$t_tests_correct = PCM2_effect_10$t_tests_correct - 9
+PCM2_effect_10$total_plant_number = as.factor(PCM2_effect_10$total_plant_number)
+PCM2_effect10_summary = PCM2_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "PCM2")
+
+GFP_effect_10 = compare_2_custom(1.3, pops_meanlog = -1.826, pops_sdlog = 0.343)
+GFP_effect_10$t_tests_correct = GFP_effect_10$t_tests_correct - 9
+GFP_effect_10$total_plant_number = as.factor(GFP_effect_10$total_plant_number)
+GFP_effect10_summary = GFP_effect_10 %>% group_by(total_plant_number) %>% 
+  summarize(percent_correct = 100* (sum(t_tests_correct)/1000)) %>%
+  filter(percent_correct >= 95) %>% 
+  reframe(min = min(percent_correct), total_plant_number) %>% slice(1) %>% mutate(Promoter = "GFP")
+
+effect_30_summary = rbind(PCH4_effect10_summary, PCH5_effect10_summary)
+effect_30_summary = rbind(effect_30_summary, PCL1_effect10_summary)
+effect_30_summary = rbind(effect_30_summary, PCL2_effect10_summary)
+effect_30_summary = rbind(effect_30_summary, PCM1_effect10_summary)
+effect_30_summary = rbind(effect_30_summary, PCM2_effect10_summary)
+effect_30_summary = rbind(effect_30_summary, GFP_effect10_summary)
+
+```
+#allows for weekly meanlog and sdlog to be user specified
+```{r}
+generate_weekly_CV_average_custom = function(pops_meanlog, pops_sdlog){
+  weekly_CV_meanlog = pops_meanlog  #meanlog of weekly CVs
+  weekly_CV_sdlog = pops_sdlog    # sdlog of weekly CVs
+
+  y = runif(1, min = 0, max = 1)
+
+  # Compute the corresponding x value
+  weeks_CV <- qlnorm(y, meanlog = weekly_CV_meanlog, sdlog = weekly_CV_sdlog)
+  
+  ####################################################################
+  #adds stochastic standard deviation of CV based on our data 
+  CV_sd_meanlog = -2.3248 #meanlog of weekly sd's of CV values
+  CV_sd_sdlog = 0.3897 #sd log of weekly sd's of CV values
+
+  magnitiude_sd_of_CV <- runif(1, min = 0, max = 1)  
+
+  # Compute the corresponding x value
+  sd_of_CV <- qlnorm(magnitiude_sd_of_CV, meanlog = CV_sd_meanlog, sdlog = CV_sd_sdlog)
+  
+  
+  # Compute sdlog
+  sdlog <- sqrt(log(1 + (sd_of_CV^2 / weeks_CV^2)))
+  
+  generated_weekly_CV = data.frame(log_CV = log(weeks_CV), log_sd = sdlog)
+  
+  
+  
+  return(generated_weekly_CV)
+}
+```
+
+#compare to constructs of a specified effect size with user-specified plant population 
+#meanlog and sdlog values
+```{r}
+compare_2_custom = function(effect_size, pops_meanlog, pops_sdlog){
+  
+low_value = 100000
+effect_size_to_add = (100000 * effect_size) - 100000
+true_values <- data.frame(
+  construct = c(1,2),
+  value = c(low_value,
+            low_value + effect_size_to_add))
+
+percent_valid_tests = data.frame(plant_number = NULL, percent_valid = NULL)
+number_tests = 1000
+conglomerate_tests = data.frame(plant_number = NULL, GFP = NULL, construct = NULL,
+                                rep = NULL, total_plants = NULL)
+conglomerate_tests_collect = FALSE
+
+experimental_summary = data.frame(ranked_properly = NULL, t_test_percent = NULL, plant_number = NULL, rep = NULL)
+
+#defines total number of plants that will be tested
+for(plant_number in 33:40){
+  number_plants_to_generate = plant_number
+  number_successful_comparisons = 0
+  
+  print(number_plants_to_generate)
+  
+  #number simulations
+  for(iterations in 1:number_tests){
+    GFP_distribution = data.frame(plant_number = NULL, GFP = NULL, construct = NULL)
+    weekly_CV = generate_weekly_CV_average_custom(pops_meanlog = pops_meanlog, pops_sdlog = pops_sdlog )
+    
+    #defined number of constructs
+    for(construct in 1:length(true_values$construct)){
+      
+      #defines number of plants for this iteration
+      for(plants in 1:number_plants_to_generate){
+        plant_CV = generate_plant_CV(weekly_CV) #generate plant
+        plant_number = as.factor(plants)
+        
+        GFP_output = generate_8_disks(true_values$value[construct], plant_CV, plant_number)
+        GFP_output = GFP_output %>% mutate(construct = true_values$construct[construct])
+        
+        GFP_distribution = rbind(GFP_distribution, GFP_output)
+      }
+      
+      if(conglomerate_tests_collect == TRUE){
+        experiment_data = GFP_distribution %>% 
+          mutate(rep = as.factor(iterations), total_plants = as.factor(number_plants_to_generate))
+        conglomerate_tests = rbind(conglomerate_tests, experiment_data)
+      }
+    }
+    
+    #determine if experiment can successfully differentiate all samples
+    iteration_results = calculate_ranking_significance(GFP_distribution)
+    iteration_results = iteration_results %>% mutate(total_plant_number = number_plants_to_generate,
+                                                     rep = as.factor(iterations))
+    
+    
+    if(iterations %% 100 == 0){
+      print(paste(c(iterations, "iterations of plant number ", number_plants_to_generate, " completed")))
+    }
+    
+    experimental_summary = rbind(experimental_summary, iteration_results)
+  }
+  
+  
+}
+experimental_summary = experimental_summary %>% mutate(effect_size = effect_size)
+return(experimental_summary)
+}
+```
+
+```{r}
+
+EHA105_15 = compare_2_custom(1.15, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_30 = compare_2_custom(1.3, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_50 = compare_2_custom(1.50, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_70 = compare_2_custom(1.70, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_100 = compare_2_custom(2, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_200 = compare_2_custom(3, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_200_2 = compare_2_custom(1.15, pops_meanlog = -0.903, pops_sdlog = 0.46 )
+EHA105_200_2$t_tests_correct = EHA105_200_2$t_tests_correct - 9
+EHA105_200_2 %>% group_by(as.factor(total_plant_number)) %>%
+  summarize(total = 100 * sum(t_tests_correct) / n())
+
+combined_EHA105 = rbind(EHA105_15, EHA105_30)
+combined_EHA105 = rbind(combined_EHA105, EHA105_50)
+combined_EHA105 = rbind(combined_EHA105, EHA105_70)
+combined_EHA105 = rbind(combined_EHA105, EHA105_100)
+combined_EHA105 = rbind(combined_EHA105, EHA105_200)
+
+combined_EHA105$Strain = "EHA105"
+combined_EHA105$effect_size = as.factor(combined_EHA105$effect_size)
+combined_EHA105$total_plant_number = as.factor(combined_EHA105$total_plant_number)
+combined_EHA105$t_tests_correct = combined_EHA105$t_tests_correct - 9
+
+combined_EHA105 %>% group_by(effect_size, total_plant_number) %>%
+  summarize(percent_correct = 100*(sum(t_tests_correct)/n())) %>% ungroup() %>%
+  filter(percent_correct > 95) %>%
+  group_by(effect_size) %>%
+  summarize(min_plants_needed = min(as.integer(total_plant_number) + 1))
+
+pCL2_15 = compare_2_custom(1.15, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_30 = compare_2_custom(1.3, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_50 = compare_2_custom(1.5, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_70 = compare_2_custom(1.7, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_100 = compare_2_custom(2, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_200 = compare_2_custom(3, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_200_2 = compare_2_custom(2, pops_meanlog = -2.585, pops_sdlog = 0.357 )
+pCL2_200_2$t_tests_correct = pCL2_200_2$t_tests_correct - 9
+pCL2_200_2 %>% summarize(total = 100 * sum(t_tests_correct) / n())
+
+
+combined_pCL2 = rbind(pCL2_15, pCL2_30)
+combined_pCL2 = rbind(combined_pCL2, pCL2_50)
+combined_pCL2 = rbind(combined_pCL2, pCL2_70)
+combined_pCL2 = rbind(combined_pCL2, pCL2_100)
+combined_pCL2 = rbind(combined_pCL2, pCL2_200)
+
+
+combined_pCL2$Strain = "pCL2"
+combined_pCL2$effect_size = as.factor(combined_pCL2$effect_size)
+combined_pCL2$total_plant_number = as.factor(combined_pCL2$total_plant_number)
+combined_pCL2$t_tests_correct = combined_pCL2$t_tests_correct - 9
+
+pCL2_final = combined_pCL2 %>% group_by(effect_size, total_plant_number) %>%
+  summarize(percent_correct = 100*(sum(t_tests_correct)/n())) %>% ungroup() %>%
+  filter(percent_correct > 95) %>%
+  group_by(effect_size) %>%
+  summarize(min_plants_needed = min(as.integer(total_plant_number) + 1))
+
+GV3101_15 = compare_2_custom(1.15, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_30 = compare_2_custom(1.3, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_50 = compare_2_custom(1.5, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_70 = compare_2_custom(1.7, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_100 = compare_2_custom(2, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_200 = compare_2_custom(3, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_200_2 = compare_2_custom(1.15, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_200_2$t_tests_correct = GV3101_200_2$t_tests_correct - 9
+GV3101_200_2 %>% group_by(as.factor(total_plant_number)) %>% 
+  summarize(total = 100 * sum(t_tests_correct) / n())
+
+combined_GV3101 = rbind(GV3101_15, GV3101_30)
+combined_GV3101 = rbind(combined_GV3101, GV3101_50)
+combined_GV3101 = rbind(combined_GV3101, GV3101_70)
+combined_GV3101 = rbind(combined_GV3101, GV3101_100)
+combined_GV3101 = rbind(combined_GV3101, GV3101_200)
+
+combined_GV3101$Strain = "GV3101"
+combined_GV3101$effect_size = as.factor(combined_GV3101$effect_size)
+combined_GV3101$total_plant_number = as.factor(combined_GV3101$total_plant_number)
+combined_GV3101$t_tests_correct = combined_GV3101$t_tests_correct - 9
+combined_GV3101$plant_num = as.numeric(combined_GV3101$total_plant_number) + 1
+
+combined_GV3101 %>% group_by(effect_size, total_plant_number) %>%
+  summarize(percent_correct = 100*(sum(t_tests_correct)/n())) %>% ungroup() %>%
+  filter(percent_correct > 95) %>%
+  group_by(effect_size) %>%
+  summarize(min_plants_needed = min(as.integer(total_plant_number) + 1))
+
+
+
+
+all_combined = rbind(combined_GV3101, combined_pCL2)
+all_combined = rbind(all_combined, combined_EHA105)
+all_combined$t_tests_correct = all_combined$t_tests_correct - 9
+
+```
+#Look at proportion of variance contribution from Plant, Leaf, and Date from different normalization schemes
+```{r}
+# Load car package
+install.packages("car")  
+install.packages("performance")
+library(car)
+library(lme4)
+library(performance)
+
+weekly_norm$Plant = as.factor(weekly_norm$Plant)
+weekly_norm = weekly_norm %>% group_by(Date, Plant, Red.Promoter) %>% mutate(PlantID = as.factor(paste0(Plant, Red.Promoter, Date)))
+weekly_norm$Date = as.factor(weekly_norm$Date)
+weekly_norm$Leaf = as.factor(weekly_norm$Leaf)
+
+norm_split = weekly_norm %>% group_by(Red.Promoter) %>% group_split()
+
+PCH4 = norm_split[[1]]
+
+model_GFP <- lmer(Green ~ Leaf + (1|Date) + (1|PlantID), data = PCH4)
+summary(model_GFP)
+r2_nakagawa(model_GFP)
+
+model_normalized <- lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCH4)
+summary(model_normalized)
+r2_nakagawa(model_normalized)
+
+
+PCL2 = norm_split[[4]]
+
+model_GFP <- lmer(Green ~ Leaf + (1|Date) + (1|PlantID), data = PCL2)
+summary(model_GFP)
+r2_nakagawa(model_GFP)
+
+model_normalized <- lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCL2)
+summary(model_normalized)
+r2_nakagawa(model_normalized)
+
+GFP_alone = norm_split[[7]]
+
+model_GFP <- lmer(Green ~ Leaf + (1|Date) + (1|PlantID), data = GFP_alone)
+summary(model_GFP)
+r2_nakagawa(model_GFP)
+
+
+model_GFP <- lmer(GFP ~ Leaf + (1|Date) + (1|Unique_plant_ID), data = PC4_data)
+summary(model_GFP)
+r2_nakagawa(model_GFP)
+
+VarCorr(model_GFP)
+
+PC4_GFP = variance_partition2(model_GFP) %>% mutate(ID = "PC4_GFP")
+PC4_GFP_detailed = variance_partition_detailed(model_GFP)
+
+PCH4 = norm_split[[1]]
+PCH5 = norm_split[[2]]
+PCL1 = norm_split[[3]]
+PCL2 = norm_split[[4]]
+PCM1 = norm_split[[5]]
+PCM2 = norm_split[[6]]
+GFP_control = norm_split[[7]]
+
+PCH4_model = lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCH4)
+PCH4_output = variance_partition(PCH4_model) %>% mutate(ID = "PCH4")
+
+PCH5_model = lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCH5)
+PCH5_output = variance_partition(PCH5_model) %>% mutate(ID = "PCH5")
+
+PCL1_model = lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCL1)
+PCL1_output = variance_partition(PCL1_model) %>% mutate(ID = "PCL1")
+
+PCL2_model = lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCL2)
+PCL2_output = variance_partition(PCL2_model) %>% mutate(ID = "PCL2")
+
+PCM1_model = lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCM1)
+PCM1_output = variance_partition(PCM1_model) %>% mutate(ID = "PCM1")
+
+PCM2_model = lmer(Green.Red ~ Leaf + (1|Date) + (1|PlantID), data = PCM2)
+PCM2_output = variance_partition(PCM2_model) %>% mutate(ID = "PCM2")
+PCM2_output$Percent[2] = 1
+PCM2_output$Percent[4] = 29.96
+
+GFP_control_model = lmer(Green ~ Leaf + (1|Date) + (1|PlantID), data = GFP_control)
+GFP_control_output = variance_partition(GFP_control_model) %>% mutate(ID = "GFP_control")
+
+PC4_data_renamed = PC4_data 
+PC4_data_renamed$PlantID = PC4_data_renamed$Unique_plant_ID
+
+PC4_bulk = lmer(GFP ~ Leaf + (1|Date) + (1|PlantID), data = PC4_data_renamed)
+PC4_bulk_output = variance_partition(PC4_bulk) %>% mutate(ID = "PC4_Bulk")
+
+normalization_stats = rbind(PCH4_output, PCH5_output)
+normalization_stats = rbind(normalization_stats, PCL1_output)
+normalization_stats = rbind(normalization_stats, PCL2_output)
+normalization_stats = rbind(normalization_stats, PCM1_output)
+normalization_stats = rbind(normalization_stats, PCM2_output)
+normalization_stats = rbind(normalization_stats, GFP_control_output)
+normalization_stats = rbind(normalization_stats, PC4_bulk_output)
+
+PCH5 %>% ggplot(aes(x = Date, y = Green.Red, fill = Plant)) + geom_boxplot()
+PCH5 %>% ggplot(aes(x = Date, y = Green.Red)) + geom_boxplot()
+
+PCH4 %>% ggplot(aes(x = Date, y = Green.Red, fill = Plant)) + geom_boxplot()
+PCH4 %>% ggplot(aes(x = Date, y = Green.Red)) + geom_boxplot()
+
+PCM2 %>% ggplot(aes(x = Date, y = Green.Red, fill = Plant)) + geom_boxplot()
+PCM2 %>% ggplot(aes(x = Date, y = Green.Red)) + geom_boxplot()
+
+
+normalization_stats %>% ggplot(aes(x = Component, y = Percent)) + geom_col() + facet_wrap(~ID)
+normalization_stats$Component = factor(normalization_stats$Component, levels = c("Date", "Plant", "Leaf", "Residual"))
+normalization_stats$ID = factor(normalization_stats$ID, levels = c("GFP_control", "PC4_Bulk", "PCM2", "PCH5", "PCL2", "PCL1", "PCM1", "PCH4"))
+var_overview = normalization_stats %>% ggplot(aes(x = ID, y = Percent, fill = Component)) + geom_col() +
+  theme_light() +
+  labs(title = "Variance contributions post-normalization") +
+  theme(
+    axis.text.x = element_text(face = "bold", color = "black", size = 10),
+    axis.text.y = element_text(face = "bold", color = "black", size = 10),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2)
+  )
+
+```
+
+```{r}
+variance_partition2 <- function(model) {
+  # Load required package
+  if (!requireNamespace("performance", quietly = TRUE)) {
+    install.packages("performance")
+  }
+  library(performance)
+
+  # Extract variance components
+  var_components <- as.data.frame(VarCorr(model))
+  
+  # Extract variance by group
+  groups <- var_components$grp
+  values <- var_components$vcov
+  names(values) <- groups
+  
+  # Identify standard groups
+  var_date <- ifelse("Date" %in% names(values), values["Date"], 0)
+  var_plant <- ifelse("Unique_plant_ID" %in% names(values), values["Unique_plant_ID"], 0)
+  var_resid <- ifelse("Residual" %in% names(values), values["Residual"], 0)
+
+  # Total variance from random effects + residuals
+  total_var <- var_date + var_plant + var_resid
+  
+  # Marginal R² = fixed effect (Leaf)
+  r2_vals <- r2_nakagawa(model)
+  leaf_var_percent <- r2_vals$R2_marginal * 100
+  
+  # Build data frame
+  df <- data.frame(
+    Component = c("Date", "Plant", "Residual", "Leaf"),
+    Percent = round(c(
+      (var_date / total_var) * 100,
+      (var_plant / total_var) * 100,
+      (var_resid / total_var) * 100,
+      leaf_var_percent
+    ), 2)
+  )
+  
+  return(df)
+}
+
+```
+
+```{r}
+variance_partition <- function(model) {
+  # Load required package
+  if (!requireNamespace("performance", quietly = TRUE)) {
+    install.packages("performance")
+  }
+  library(performance)
+
+  # Get R² values
+  r2 <- r2_nakagawa(model)
+  r2_marg <- r2$R2_marginal       # variance explained by fixed effects (Leaf)
+  r2_cond <- r2$R2_conditional    # variance explained by fixed + random effects
+  r2_random <- r2_cond - r2_marg  # variance explained by random effects
+  r2_resid <- 1 - r2_cond         # unexplained variance
+
+  # Extract raw variance components
+  vc <- as.data.frame(VarCorr(model))
+  var_date <- vc[vc$grp == "Date", "vcov"]
+  var_plant <-vc[vc$grp == "PlantID", "vcov"]
+  var_total_random <- var_date + var_plant
+
+  # Proportion of each random component
+  prop_date <- var_date / var_total_random
+  prop_plant <- var_plant / var_total_random
+
+  # Scale to total random R²
+  percent_leaf <- round(r2_marg * 100, 2)
+  percent_date <- round(prop_date * r2_random * 100, 2)
+  percent_plant <- round(prop_plant * r2_random * 100, 2)
+  percent_resid <- round(r2_resid * 100, 2)
+
+  # Combine results
+  df <- data.frame(
+    Component = c("Leaf", "Date", "Plant", "Residual"),
+    Percent = c(percent_leaf, percent_date, percent_plant, percent_resid)
+  )
+
+  return(df)
+}
+
+```
+
+
+```{r}
+#weekly_CV_meanlog = -1.447  #meanlog of weekly CVs
+  #weekly_CV_sdlog = 0.3    # sdlog of weekly CVs
+GV3101_100_plants = compare_2_custom(1.05, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_100_plants$t_tests_correct = GV3101_100_plants$t_tests_correct - 9
+GV3101_100_plants %>% summarize(correct = sum(t_tests_correct), total = n())
+#5% = 89.6%
+
+GV3101_100_plants_1.07 = compare_2_custom(1.07, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_100_plants_1.07$t_tests_correct = GV3101_100_plants_1.07$t_tests_correct - 9
+GV3101_100_plants_1.07 %>% summarize(correct = sum(t_tests_correct), total = n())
+#98.2
+
+GV3101_100_plants_1.06 = compare_2_custom(1.06, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_100_plants_1.06$t_tests_correct = GV3101_100_plants_1.06$t_tests_correct - 9
+GV3101_100_plants_1.06 %>% summarize(correct = sum(t_tests_correct), total = n())
+#96.0%
+
+GV3101_100_plants_1.057 = compare_2_custom(1.057, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_100_plants_1.057$t_tests_correct = GV3101_100_plants_1.057$t_tests_correct - 9
+GV3101_100_plants_1.057 %>% summarize(correct = sum(t_tests_correct), total = n())
+#96.0%
+
+#EHA105
+#weekly_CV_meanlog = -0.903  #meanlog of weekly CVs
+  #weekly_CV_sdlog = 0.46    # sdlog of weekly CVs
+
+EHA105_100_plants_1.1 = compare_2_custom(1.1, pops_meanlog = -0.903, pops_sdlog = 0.46)
+EHA105_100_plants_1.1$t_tests_correct = EHA105_100_plants_1.1$t_tests_correct - 9
+EHA105_100_plants_1.1 %>% summarize(correct = sum(t_tests_correct), total = n())
+#97.2
+
+EHA105_50_plants_1.1 = compare_2_custom(1.1, pops_meanlog = -0.903, pops_sdlog = 0.46)
+EHA105_50_plants_1.1$t_tests_correct = EHA105_50_plants_1.1$t_tests_correct - 9
+EHA105_50_plants_1.1 %>% summarize(correct = sum(t_tests_correct), total = n())
+#86.3
+
+GV3101_50_plants_1.06 = compare_2_custom(1.06, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_50_plants_1.06$t_tests_correct = GV3101_50_plants_1.06$t_tests_correct - 9
+GV3101_50_plants_1.06 %>% summarize(correct = sum(t_tests_correct), total = n())
+
+GV3101_50_plants_1.1 = compare_2_custom(1.1, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_50_plants_1.1$t_tests_correct = GV3101_50_plants_1.1$t_tests_correct - 9
+GV3101_50_plants_1.1 %>% summarize(correct = sum(t_tests_correct), total = n())
+
+GV3101_50_plants_1.12 = compare_2_custom(1.12, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_50_plants_1.12$t_tests_correct = GV3101_50_plants_1.12$t_tests_correct - 9
+GV3101_50_plants_1.12 %>% summarize(correct = sum(t_tests_correct), total = n())
+
+GV3101_50_plants_1.15 = compare_2_custom(1.15, pops_meanlog = -1.447, pops_sdlog = 0.3)
+GV3101_50_plants_1.15$t_tests_correct = GV3101_50_plants_1.15$t_tests_correct - 9
+GV3101_50_plants_1.15 %>% summarize(correct = sum(t_tests_correct), total = n())
+
+GV3101_50_plants_1.1 = find_optimal_input(starting_guess = 1.1) #GV3101 with 50 plants: 1.0875, 95.5%
+EHA105_50_plants_1.1 = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) #EHA105 50 plants: 1.125
+
+#PCL2_effect_10 = compare_2_custom(1.3, pops_meanlog = -2.585, pops_sdlog = 0.357)
+PCL2_50_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) #pCL2 50 plants: 1.0688
+
+##25 plants
+GV3101_25_plants = find_optimal_input(starting_guess = 1.1) #GV3101 25 plants: 1.125
+EHA105_25_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) #EHA105 25 plants: 1.1875
+PCL2_25_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) #pCL2 25 plants: 1.1031
+
+#10 plants
+GV3101_10_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_10_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_10_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+#5 plants
+GV3101_5_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_5_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_5_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+#3 plants
+GV3101_3_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_3_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_3_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+#2 plants
+GV3101_2_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_2_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_2_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+#21 plant
+GV3101_1_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_1_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_1_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+#4 plant
+GV3101_4_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_4_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_4_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+
+GV3101_16_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_16_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_16_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+
+GV3101_37_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_37_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_37_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+GV3101_7_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_7_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_7_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+GV3101_6_plants = find_optimal_input(starting_guess = 1.1) 
+EHA105_6_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -0.903, pops_sdlog = 0.46) 
+PCL2_6_plants = find_optimal_input(starting_guess = 1.1, pops_meanlog = -2.585, pops_sdlog = 0.357) 
+
+```
+```{r}
+effect_size_modeling %>% filter(Effect_size < 100) %>%
+  ggplot(aes(x = Effect_size, y = Plants, color = Strain)) + geom_point() + geom_smooth(se = FALSE)
+
+#GV3101
+GV3101 = effect_size_modeling %>% filter(Strain == "pCL2") %>% filter(Plants < 30 & Plants >2)
+
+# Fit model: y = a * exp(-b / x)
+model <- nls(Plants ~ a * exp(-b / Effect_size), data = GV3101, start = list(a = 1, b = 1))
+
+# Summary of model fit
+summary(model)
+
+# Predict and plot
+GV3101$pred <- predict(model) 
+
+#GV3101: a = 1.6615, b = -34.1236
+#EHA105: a = 1.9115, b = -48.6043
+#pCL2: a = 1.4886, b = -29.2417
+
+library(ggplot2)
+ggplot(GV3101, aes(x = Effect_size, y = Plants)) +
+  geom_point() +
+  geom_line(aes(y = pred), color = "blue")
+
+
+effect_size_modeling %>% filter(Plants > 1 & Plants < 30) %>% ggplot(aes(x = Effect_size, y = Plants, color = Strain)) +
+  geom_point() +
+  geom_smooth(method = "nls", se = FALSE,
+              formula = Plants ~ a * exp(-b / Effect_size),
+              method.args = list(start = list(a = 1, b = 1)))
+
+
+# Define a sequence of x-values
+x_vals <- seq(6.5, 21, length.out = 300)
+
+# Define parameters for 3 functions
+params <- tribble(
+  ~Strain, ~a, ~b,
+  "GV3101", 1.6615, -34.1236,
+  "EHA105", 1.9115, -48.6043,
+  "pCL2", 1.4886, -29.2417
+)
+
+# Generate y-values for each function
+plot_data <- params %>%
+  rowwise() %>%
+  mutate(data = list(tibble(
+    x = x_vals,
+    y = a * exp(-b / x)
+  ))) %>%
+  unnest(data)
+
+# Plot
+ggplot(plot_data, aes(x = x, y = log2(y), color = Strain)) +
+  geom_line(size = 1)  + geom_hline(yintercept = log2(50), linetype = "dashed", color = "black") +
+  geom_vline(xintercept = 10.02) + geom_vline(xintercept = 14.89) + geom_vline(xintercept = 8.32) +
+  labs(x = "Effect_size", y = "Predicted Plants")
+
+compute_x_given_y <- function(a, b, y_target = 50) {
+  -b / log(y_target / a)
+}
+
+params <- tibble(
+  Strain = c("GV3101", "EHA105", "pCL2"),
+  a = c(1.6615, 1.9115, 1.4886),
+  b = c(-34.1236, -48.6043, -29.2417)
+)
+
+params <- params %>%
+  mutate(x_at_y50 = compute_x_given_y(a, b, y_target = 100))
+
+print(params)
+#50 plant cutoffs:
+#GV3101: 10.02
+#EHA105: 14.89
+#pCL2: 8.32
+
+
+params <- tibble(
+  Strain = c("GV3101", "EHA105", "pCL2"),
+  a = c(1.6615, 1.9115, 1.4886),
+  b = c(-34.1236, -48.6043, -29.2417)
+) %>%
+  mutate(
+    x_at_y50 = -b / log(20 / a),
+    y_at_50 = log2(20)
+  )
+
+
+# Step 2: Add to plot
+ggplot(plot_data, aes(x = x, y = log2(y), color = Strain)) +
+  geom_line(size = 1) +  geom_hline(yintercept = log2(20), linetype = "dotted", color = "black") +
+  geom_point(data = params, aes(x = x_at_y50, y = y_at_50, color = Strain), size = 3) +
+  #geom_point(data = params, aes(x = x_at_y50, y = -Inf, color = Strain), size = 3) +
+  geom_segment(
+  data = params,
+  aes(x = x_at_y50, xend = x_at_y50, y = -Inf, yend = y_at_50, color = Strain),
+  linetype = "dashed",
+  size = 1.2  # increase thickness
+) +
+  labs(x = "Effect_size", y = "Predicted Plants") +
+ ylim(c(2.5, 11)) + xlim(c(6.5, 21)) +
+  theme_light() +
+  theme(
+    #axis.text.x = element_blank(),
+    #axis.text.y = element_blank(),
+    #axis.ticks = element_blank(),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", size = 2),
+    #legend.position = "none"
+  ) + ylab("Log2 Plants Required") + xlab("Percent Effect Size") +
+  ggtitle("Effect size vs minimum required plants")
+
+
+
+
+
+```
+
+```{r}
+find_optimal_input <- function(starting_guess = 1.1,
+                               pops_meanlog = -1.447,
+                               pops_sdlog = 0.3,
+                               target_min = 945,
+                               target_max = 955,
+                               tolerance = 0.01,
+                               verbose = TRUE) {
+  low <- NA
+  high <- NA
+  guess <- starting_guess
+
+  repeat {
+    # Run simulation and adjust
+    result <- compare_2_custom(guess, pops_meanlog = pops_meanlog, pops_sdlog = pops_sdlog)
+    result$t_tests_correct <- result$t_tests_correct - 9
+    correct_total <- sum(result$t_tests_correct)
+
+    if (verbose) {
+      cat("Guess:", round(guess, 4), "- Correct:", correct_total, "\n")
+    }
+
+    # Check if in desired range
+    if (correct_total >= target_min && correct_total <= target_max) {
+      break
+    }
+
+    # Update bounds
+    if (correct_total < target_min) {
+      low <- guess
+    } else {
+      high <- guess
+    }
+
+    # Compute new guess
+    if (!is.na(low) && !is.na(high)) {
+      guess <- (low + high) / 2
+    } else if (!is.na(low)) {
+      guess <- low + 0.2
+    } else if (!is.na(high)) {
+      guess <- high - 0.1
+    }
+
+    # Stop if interval is too narrow
+    if (!is.na(low) && !is.na(high) && (high - low) < tolerance) {
+      break
+    }
+  }
+
+  if (verbose) {
+    cat("✅ Final guess within target range:", round(guess, 4), "\n")
+  }
+
+  return(guess)
+}
+
+```
+
+
+
+
+
+
+
