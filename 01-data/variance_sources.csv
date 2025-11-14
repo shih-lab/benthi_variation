@@ -1,0 +1,7 @@
+Source,Percent
+Batch-to-batch mean GFP,23.8
+Batch-to-batch GFP variance,15.6
+Plant-to-plant mean GFP,9.9
+Leaf-to-leaf GFP variance,28.2
+Disc-to-disc GFP variance,22.3
+Technical variance,0.18

@@ -1,0 +1,13 @@
+"Week","Component","Condition","sd_log","mult_scatter"
+"1","Plant mean within Week","T2A",0.459150501228743,1.58272888750087
+"1","Residual","T2A",0.315521901919487,1.37097463857077
+"2","Plant mean within Week","T2A",0.235584911676,1.26564884505934
+"2","Residual","T2A",0.206713178207434,1.22962983656318
+"3","Plant mean within Week","T2A",0.164804809747662,1.17916293513647
+"3","Residual","T2A",0.441976994297464,1.5557799482117
+"1","Plant mean within Week","co-infiltration",0.491138393581321,1.63417549635623
+"1","Residual","co-infiltration",0.468303925841842,1.59728278443821
+"2","Plant mean within Week","co-infiltration",0.129232944881788,1.13795517412703
+"2","Residual","co-infiltration",0.22099133115289,1.24731261775482
+"3","Plant mean within Week","co-infiltration",0.411634425539094,1.50928258029701
+"3","Residual","co-infiltration",0.222185042824889,1.24880243841651
